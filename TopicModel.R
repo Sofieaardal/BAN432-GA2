@@ -8,15 +8,12 @@ require(topicmodels)
 require(wordcloud)
 require(udpipe)
 require(dplyr)
-library(stringr)
-library(tokenizers) 
+require(slam)
 # Load data
 load("congressional_records.RData")
 tagger <- udpipe_load_model("english-ewt-ud-2.5-191206.udpipe")
 
-sample_data <- sample_n(crec, 1000)
-
-
+# Function to clean the documents
 process_document <- function(doc_text) {
   doc_text %>%
     removePunctuation() %>%
@@ -36,26 +33,25 @@ process_document <- function(doc_text) {
   
  return(filtered_data)
 }
-
-processed_docs <- lapply(sample_data$strText, process_document)
 # Preproccessing of data
+
+#processed_docs <- lapply(crec$strText, process_document)
+#save(processed_docs, file = "ProcessedData.RData")
+load("ProcessedData.Rdata")
+
+#Creating a DTM
 corpus <- Corpus(VectorSource(processed_docs))
-#corpus <- tm_map(corpus, content_transformer(lemmatize_strings))
 dtm <- DocumentTermMatrix(corpus,
-                          control = list( 
-                            removePunctuation = T,
-                            stopwords = T,
-                            stemming = F,
-                            removeNumbers = T,
+                          control = list(
                             wordLengths = c(4, 20),
-                            bounds = list(global = c(10,50))))
+                            bounds = list(global = c(100,5000))))
 
 
 dtm <- dtm[row_sums(dtm) > 10,]
 dim(dtm)
 
 # 2. Model Estimation
-num_topics <- 75 # Decide on the number
+num_topics <- 50 # Decide on the number
 topic <- LDA(dtm,  # document term matrix
              k = num_topics, # specifify number of topics
              method = "Gibbs",
